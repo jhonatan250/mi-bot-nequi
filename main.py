@@ -1,25 +1,39 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
+# Reemplaza 'TU_TOKEN_AQUI' por el token real de tu bot de BotFather
 TOKEN = '8016766142:AAHDek2pZwegaPvzcqcj0cSaiH7_qgNzXvw'
 
-def start(update, context):
-    update.message.reply_text('Hola, envíame la foto del comprobante de Nequi. No acepto videos ni llamadas.')
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text('¡Hola! Envíame la foto de tu comprobante Nequi. No acepto llamadas ni videos.')
 
-def recibir_foto(update, context):
-    if update.message.photo:
-        update.message.reply_text('Gracias, recibí tu comprobante.')
+def handle_photo(update: Update, context: CallbackContext):
+    update.message.reply_text('¡Gracias! Recibí tu comprobante.')
+
+def handle_message(update: Update, context: CallbackContext):
+    if update.message.video or update.message.video_note:
+        update.message.reply_text('❌ No acepto videos.')
+    elif update.message.voice or update.message.audio:
+        update.message.reply_text('❌ No acepto audios.')
+    elif update.message.contact:
+        update.message.reply_text('❌ No acepto contactos.')
+    elif update.message.location:
+        update.message.reply_text('❌ No acepto ubicaciones.')
+    elif update.message.document:
+        update.message.reply_text('❌ Solo acepto fotos de comprobantes.')
     else:
-        update.message.reply_text('Por favor, envía solo fotos.')
+        update.message.reply_text('✅ Esperando una foto de tu comprobante.')
 
-def bloquear_todo(update, context):
-    update.message.reply_text('Solo se aceptan fotos de comprobantes. No se permiten videos, audios o llamadas.')
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-updater = Updater(TOKEN, use_context=True)
-dp = updater.dispatcher
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
+    dp.add_handler(MessageHandler(Filters.all, handle_message))
 
-dp.add_handler(CommandHandler('start', start))
-dp.add_handler(MessageHandler(Filters.photo, recibir_foto))
-dp.add_handler(MessageHandler(Filters.video | Filters.voice | Filters.audio | Filters.document | Filters.contact | Filters.location, bloquear_todo))
+    updater.start_polling()
+    updater.idle()
 
-updater.start_polling()
-updater.idle()
+if __name__ == '__main__':
+    main()
